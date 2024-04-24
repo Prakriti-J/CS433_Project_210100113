@@ -1,0 +1,68 @@
+https://github.com/official-stockfish/Stockfish/blob/master/src
+Refer to this code. I need to add a new function to this, in uci.cpp, which does the following:
+- input to the function: initial position (Stockfish::Position &pos) and initial states (Stockfish::StateListPtr &states)
+- what the function does: finds the best 4 peices to move, and the best postitions to move them to, so that the trace_eval() function returns the maximum score
+- output of the function: the FEN encoding of the new board configuration and the score for this configuration
+
+#include "position.h"
+#include "search.h"
+#include "evaluate.h"
+
+// ...
+
+// Define your new function
+std::pair<std::string, Value> find_best_moves(Position& pos, StateListPtr& states) {
+    // Initialize the best score to a very low value
+    Value best_score = -VALUE_INFINITE;
+
+    // Initialize the best moves to an empty list
+    std::vector<Move> best_moves;
+
+    // Iterate over all pieces
+    for (Piece p = PAWN; p <= KING; ++p) {
+        // Iterate over all squares
+        for (Square s = SQ_A1; s <= SQ_H8; ++s) {
+            // If the piece on square s is not p, continue to the next square
+            if (pos.piece_on(s) != p) continue;
+
+            // Iterate over all possible moves for the piece on square s
+            for (const ExtMove& em : MoveList<LEGAL>(pos)) {
+                Move m = em.move;
+                if (from_sq(m) != s) continue;
+
+                // Make the move
+                states->emplace_back();
+                pos.do_move(m, states->back());
+
+                // Evaluate the position
+                Value score = Tracer::trace(pos);
+
+                // If the score is better than the best score, update the best score and best moves
+                if (score > best_score) {
+                    best_score = score;
+                    best_moves = {m};
+                } else if (score == best_score) {
+                    best_moves.push_back(m);
+                }
+
+                // Undo the move
+                pos.undo_move(m);
+            }
+        }
+    }
+
+    // Make the best moves
+    for (Move m : best_moves) {
+        states->emplace_back();
+        pos.do_move(m, states->back());
+    }
+
+    // Return the FEN of the new position and the best score
+    return {pos.fen(), best_score};
+}
+
+
+Explain to me what each component of the FEN encoding means, and how to create a new position configuration using FEN
+
+
+Explain to me how how I can give the FEN configuration of the new position, given the old position and performing a move
