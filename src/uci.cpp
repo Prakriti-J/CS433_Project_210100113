@@ -191,13 +191,16 @@ void UCI::loop() {
 }
  
 //write code here for CS433 project
-Move UCI::find_next_move(Stockfish::Position &pos, Stockfish::StateListPtr &states){
+Move UCI::find_next_move(Stockfish::Position &pos, Stockfish::StateListPtr &states){ 
+    //function to use the list of legal moves available to find the move with the best score
     StateInfo s = states->back();
     auto   moveList   = MoveList<LEGAL>(pos);
     double scoretobeat = -1000, scorenow = 0;
     Move Nextmove;
+    //can find do_move and Move in the Position class
     for (const Move move : moveList)
     {
+        //this code was used in the trace_eval() function to compute scores.
         pos.do_move(move, s);
         Value v = networks.big.evaluate(pos, false);
         v       = pos.side_to_move() == WHITE ? v : -v;
@@ -205,6 +208,7 @@ Move UCI::find_next_move(Stockfish::Position &pos, Stockfish::StateListPtr &stat
         if (scorenow >= scoretobeat){scoretobeat = scorenow; Nextmove = move;}
         pos.undo_move(move);
     }
+    //returns the move that obtains the highest score
     return Nextmove;
 }
 
@@ -221,16 +225,16 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
     auto   moveList   = MoveList<LEGAL>(pos);
     double scoretobeat = -1000, scorenow = 0;
     Move moves[4];
+    //Finds the best possible next move in terms of score and does it
     for(int i = 0; i <= 3; i++){
         moves[i] = find_next_move(pos, states);
         pos.do_move(moves[i], s);
     }
-
+    //Computes the score of the total configuration as it is after moving 2 pieces 
     Value v = networks.big.evaluate(pos, false);
     v       = pos.side_to_move() == WHITE ? v : -v;
     scorenow = UCI::to_cp(v, pos);
     
-    //sync_cout<<"\n Best scoring moves = "<<(scorenow)<<"\n"<<sync_endl;
     sync_cout<<"\n"<<pos.fen()<<"\n Score: "<<(scorenow)<<"\n"<<sync_endl;
 }
 
